@@ -1,0 +1,146 @@
+# ==============================================================================
+# Root Taskfile — Runners List Monorepo
+# ==============================================================================
+# Install Task CLI: https://taskfile.dev/installation/
+#   brew install go-task       (macOS)
+#   sh -c "$(curl ..." ...)   (Linux — see taskfile.dev)
+#
+# Usage:
+#   task api:dev          — run the Go API locally (hot reload via air)
+#   task api:test         — run Go tests
+#   task infra:plan       — terraform plan (GCP)
+#   task infra:apply      — terraform apply (GCP)
+#   task compose:up       — full local stack (Postgres + API + client)
+#   task compose:down     — stop and remove local containers
+#
+# Each task delegates to the module's own Makefile / docker-compose / script
+# so you can also run those directly inside each module directory.
+# ==============================================================================
+
+version: "3"
+
+vars:
+  API_DIR: "api"
+  INFRA_TF_DIR: "infra/terraform/gcp"
+  SCRAPER_DIR: "scraper"
+
+tasks:
+  # ── API ────────────────────────────────────────────────────────────────────
+  api:build:
+    desc: Compile the Go API binary
+    dir: "{{.API_DIR}}"
+    cmds:
+      - make build
+
+  api:dev:
+    desc: Run the API locally (reads .env file)
+    dir: "{{.API_DIR}}"
+    cmds:
+      - go run ./cmd
+
+  api:test:
+    desc: Run all Go tests
+    dir: "{{.API_DIR}}"
+    cmds:
+      - go test ./... -v -count=1
+
+  api:lint:
+    desc: Lint the API with golangci-lint
+    dir: "{{.API_DIR}}"
+    cmds:
+      - golangci-lint run
+
+  api:docker:
+    desc: Build the API Docker image locally
+    dir: "{{.API_DIR}}"
+    cmds:
+      - docker build -t runners-list-api:local .
+
+  # ── Infrastructure ─────────────────────────────────────────────────────────
+  infra:plan:
+    desc: Terraform plan (GCP)
+    dir: "{{.INFRA_TF_DIR}}"
+    cmds:
+      - terraform init -reconfigure
+      - terraform plan
+
+  infra:apply:
+    desc: Terraform apply (GCP) — requires confirmation
+    dir: "{{.INFRA_TF_DIR}}"
+    cmds:
+      - terraform apply
+
+  infra:destroy:
+    desc: Terraform destroy (GCP) — DESTRUCTIVE
+    dir: "{{.INFRA_TF_DIR}}"
+    cmds:
+      - terraform destroy
+
+  # ── Scraper ────────────────────────────────────────────────────────────────
+  scraper:run:
+    desc: Run the Python scraper locally
+    dir: "{{.SCRAPER_DIR}}"
+    cmds:
+      - pip install -r requirements.txt
+      - python -m src.main
+
+  # ── Local full-stack ────────────────────────────────────────────────────────
+  compose:up:
+    desc: Start the full local stack (Postgres + API + client)
+    cmds:
+      - docker compose -f compose.yaml up --build -d
+      - echo "Stack running:"
+      - echo "  API     http://localhost:8080"
+      - echo "  Client  http://localhost:3000"
+      - echo "  DB      localhost:5432"
+
+  compose:down:
+    desc: Stop and remove local containers
+    cmds:
+      - docker compose -f compose.yaml down
+
+  compose:logs:
+    desc: Tail logs from all containers
+    cmds:
+      - docker compose -f compose.yaml logs -f
+
+  # ── Git subtree helpers ────────────────────────────────────────────────────
+  # These commands sync individual module directories with their own GitHub
+  # remotes using git subtree. This keeps each module independently deployable
+  # while letting you develop them together in this umbrella repo.
+  #
+  # First-time setup (run once per remote):
+  #   git remote add api-remote    git@github.com:aniqaqill/runners-list-api.git
+  #   git remote add infra-remote  git@github.com:aniqaqill/runners-list-infra.git
+  #   git remote add client-remote git@github.com:aniqaqill/runners-list-web.git
+  #   git remote add scraper-remote git@github.com:aniqaqill/runners-list-scraper.git
+
+  subtree:push:api:
+    desc: Push api/ subtree to the api remote (main branch)
+    cmds:
+      - git subtree push --prefix=api api-remote main
+
+  subtree:push:infra:
+    desc: Push infra/ subtree to the infra remote
+    cmds:
+      - git subtree push --prefix=infra infra-remote main
+
+  subtree:push:client:
+    desc: Push client/ subtree to the client remote
+    cmds:
+      - git subtree push --prefix=client client-remote main
+
+  subtree:push:scraper:
+    desc: Push scraper/ subtree to the scraper remote
+    cmds:
+      - git subtree push --prefix=scraper scraper-remote main
+
+  subtree:pull:api:
+    desc: Pull latest from the api remote into api/
+    cmds:
+      - git subtree pull --prefix=api api-remote main --squash
+
+  subtree:pull:infra:
+    desc: Pull latest from the infra remote into infra/
+    cmds:
+      - git subtree pull --prefix=infra infra-remote main --squash

@@ -1,0 +1,59 @@
+services:
+  # 🐘 Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: runners_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: runners_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  # 🐹 Go API
+  api:
+    build: ./api
+    container_name: runners_api
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_NAME: runners_db
+      DB_PORT: 5432
+      JWT_SECRET: dev_secret_key_123
+      INTERNAL_API_KEY: dev_secret_key_123
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+  # ⚛️ Next.js Frontend
+  client:
+    build: ./client
+    container_name: runners_web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+    depends_on:
+      - api
+  # 🐍 Python Scraper (Optional - Run manually usually, but here for context)
+  scraper:
+    build: ./scraper
+    container_name: runners_scraper
+    environment:
+      API_URL: http://api:8080/api/v1/internal/sync
+      API_KEY: dev_secret_key_123
+    depends_on:
+      - api
+    # Don't run automatically since it's a script, just keep container ready
+    entrypoint: [ "tail", "-f", "/dev/null" ]
+volumes:
+  postgres_data:
