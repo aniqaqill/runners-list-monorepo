@@ -1,0 +1,13 @@
+# HITL: copy to terraform.tfvars (gitignored) before apply.
+lambda_zip_path = "../path/to/function.zip"
+
+db_host     = "db.example.com"
+db_user     = "postgres"
+db_password = "REPLACE"
+db_name     = "postgres"
+db_port     = "5432"
+db_sslmode  = "require"
+
+jwt_secret       = "REPLACE"
+internal_api_key = "REPLACE"
+redis_url        = ""

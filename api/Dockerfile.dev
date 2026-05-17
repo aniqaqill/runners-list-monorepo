@@ -1,0 +1,11 @@
+# Base stage
+FROM golang:1.24.0 AS base
+WORKDIR /usr/src/app
+
+# Development stage
+FROM base AS dev
+RUN go install github.com/air-verse/air@v1.52.3
+COPY . .
+RUN go mod download
+RUN go mod tidy
+CMD ["air", "-c", ".air.toml"]

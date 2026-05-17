@@ -1,0 +1,27 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - curl
+  - git
+  - ufw
+
+runcmd:
+  # Install K3s (Lightweight Kubernetes)
+  # Disabling Traefik here to install it manually later via ArgoCD? 
+  # Actually, for simplicity in this "Enterprise Lite" guide, we will KEEP the default Traefik
+  # because it's the easiest Ingress path. Run minimal setup.
+  - curl -sfL https://get.k3s.io | sh -
+
+  # Firewall Setup (Allow SSH, HTTP, HTTPS, Kubernetes API)
+  - ufw allow 22/tcp
+  - ufw allow 80/tcp
+  - ufw allow 443/tcp
+  - ufw allow 6443/tcp
+  - ufw --force enable
+
+  # Wait for K3s to be ready and set permission for default user (if needed later)
+  - echo "Waiting for K3s to start..."
+  - sleep 20
+  - k3s kubectl get nodes
