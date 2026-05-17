@@ -1,0 +1,10 @@
+# Copy to backend.hcl (do not commit real bucket names if your policy forbids it).
+# Prerequisite (issue #21): S3 bucket with versioning + DynamoDB table for locks.
+#
+#   terraform init -backend-config=backend.hcl
+#
+bucket         = "REPLACE_ME_runners_list_tf_state"
+key            = "aws-lambda/terraform.tfstate"
+region         = "ap-southeast-1"
+dynamodb_table = "REPLACE_ME_terraform_locks"
+encrypt        = true

@@ -1,0 +1,53 @@
+name: Deploy API to AWS Lambda
+# Repository layout: workflow assumes repo root is the Go module (this api/ tree).
+# If you run it from a monorepo root, set `defaults.run.working-directory: api` on the job.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-southeast-1
+
+jobs:
+  deploy:
+    name: Build and update Lambda
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # HITL: configure an IAM role that trusts GitHub OIDC
+      # (docs: aws-actions/configure-aws-credentials)
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: Build Lambda zip
+        run: |
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -tags lambda.norpc -o bootstrap ./cmd/lambda
+          zip -q function.zip bootstrap
+
+      # HITL: set secret LAMBDA_FUNCTION_NAME to the Terraform output function_name
+      - name: Update Lambda function code
+        run: |
+          aws lambda update-function-code \
+            --function-name "${{ secrets.LAMBDA_FUNCTION_NAME }}" \
+            --zip-file fileb://function.zip
+
+      - name: Done
+        run: echo "Lambda code updated. Function URL is stable — no IP sync or Vercel/scraper secret churn."

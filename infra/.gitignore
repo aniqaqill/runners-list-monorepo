@@ -1,0 +1,33 @@
+# Ignore manual AWS setup folder (replaced by Terraform)
+aws-ecs/
+
+# Archived stacks — never commit state snapshots
+archive/aws/terraform.tfstate
+archive/aws/terraform.tfstate.backup
+archive/aws/terraform.tfvars
+
+# Local non-example variables
+terraform/terraform.tfvars
+
+# Terraform
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/*.auto.tfvars
+terraform/crash.log
+terraform/crash.*.log
+terraform/override.tf
+terraform/override.tf.json
+terraform/*_override.tf
+terraform/*_override.tf.json
+
+# Terraform (aws-lambda module)
+terraform/aws-lambda/.terraform/
+terraform/aws-lambda/*.tfstate
+terraform/aws-lambda/*.tfstate.*
+terraform/aws-lambda/terraform.tfvars
+terraform/aws-lambda/*.auto.tfvars
+
+#local-docs
+LEARNING_GUIDE.md

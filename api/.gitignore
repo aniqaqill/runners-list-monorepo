@@ -1,0 +1,39 @@
+# Environment variables
+.env
+
+# Temporary files
+tmp
+temp
+/.DS_Store
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Output directories
+bin/
+obj/
+
+# Dependency directories
+vendor/
+
+# IDE/editor specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Ignore generated mock files
+# internal/**/mocks/
+
+# Ignore generated test files
+coverage.html
+coverage.out
+
+# Ignore technical docs
+technical_docs.md
+project_context.md
+*.sh
